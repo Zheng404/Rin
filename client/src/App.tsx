@@ -1,24 +1,26 @@
-import {useEffect, useRef, useState} from 'react'
-import {getCookie} from 'typescript-cookie'
-import {DefaultParams, PathPattern, Route, Switch} from 'wouter'
+import { useEffect, useRef, useState } from 'react'
+import { getCookie } from 'typescript-cookie'
+import { DefaultParams, PathPattern, Route, Switch } from 'wouter'
 import Footer from './components/footer'
-import {Header} from './components/header'
-import {Padding} from './components/padding'
-import {client} from './main'
-import {CallbackPage} from './page/callback'
-import {FeedPage, TOCHeader} from './page/feed'
-import {FeedsPage} from './page/feeds'
-import {FriendsPage} from './page/friends'
-import {TimelinePage} from './page/timeline'
-import {WritingPage} from './page/writing'
-import {Profile, ProfileContext} from './state/profile'
-import {headersWithAuth} from './utils/auth'
-import {tryInt} from './utils/int'
-import {Settings} from "./page/settings.tsx";
-
+import { Header } from './components/header'
+import { Padding } from './components/padding'
+import { client } from './main'
+import { CallbackPage } from './page/callback'
+import { FeedPage, TOCHeader } from './page/feed'
+import { FeedsPage } from './page/feeds'
+import { FriendsPage } from './page/friends'
+import { TimelinePage } from './page/timeline'
+import { WritingPage } from './page/writing'
+import { Profile, ProfileContext } from './state/profile'
+import { headersWithAuth } from './utils/auth'
+import { tryInt } from './utils/int'
+import { Settings } from "./page/settings.tsx";
+import { ClientConfigContext, ConfigWrapper } from './state/config.tsx'
+ 
 function App() {
   const ref = useRef(false)
   const [profile, setProfile] = useState<Profile | undefined>()
+  const [config, setConfig] = useState<ConfigWrapper>(new ConfigWrapper({}))
   useEffect(() => {
     if (ref.current) return
     if (getCookie('token')?.length ?? 0 > 0) {
@@ -35,65 +37,81 @@ function App() {
         }
       })
     }
+    const config = sessionStorage.getItem('config')
+    if (config) {
+      const configObj = JSON.parse(config)
+      const configWrapper = new ConfigWrapper(configObj)
+      setConfig(configWrapper)
+    } else {
+      client.config({ type: "client" }).get().then(({ data }) => {
+        if (data && typeof data != 'string') {
+          sessionStorage.setItem('config', JSON.stringify(data))
+          const config = new ConfigWrapper(data)
+          setConfig(config)
+        }
+      })
+    }
     ref.current = true
   }, [])
   return (
     <>
-      <ProfileContext.Provider value={profile}>
-        <Switch>
-          <RouteMe path="/">
-            <FeedsPage />
-          </RouteMe>
+      <ClientConfigContext.Provider value={config}>
+        <ProfileContext.Provider value={profile}>
+          <Switch>
+            <RouteMe path="/">
+              <FeedsPage />
+            </RouteMe>
 
-          <RouteMe path="/timeline">
-            <TimelinePage />
-          </RouteMe>
-
-          
-          <RouteMe path="/friends">
-            <FriendsPage />
-          </RouteMe>
-
-          <RouteMe path="/settings" paddingClassName='mx-4'>
-            <Settings/>
-          </RouteMe>
+            <RouteMe path="/timeline">
+              <TimelinePage />
+            </RouteMe>
 
 
-          <RouteMe path="/writing" paddingClassName='mx-4'>
-            <WritingPage />
-          </RouteMe>
-          
-          <RouteMe path="/writing/:id" paddingClassName='mx-4'>
-            {({ id }) => {
-              const id_num = tryInt(0, id)
-              return (
-                <WritingPage id={id_num} />
-              )
-            }}
-          </RouteMe>
+            <RouteMe path="/friends">
+              <FriendsPage />
+            </RouteMe>
 
-          <RouteMe path="/callback" >
-            <CallbackPage />
-          </RouteMe>
+            <RouteMe path="/settings" paddingClassName='mx-4'>
+              <Settings />
+            </RouteMe>
 
-          <RouteMe path="/feed/:id" headerComponent={TOCHeader()} paddingClassName='mx-4'>
-            {params => {
-              return (<FeedPage id={params.id || ""} />)
-            }}
-          </RouteMe>
 
-          <RouteMe path="/:alias" headerComponent={TOCHeader()} paddingClassName='mx-4'>
-            {params => {
-              return (
-                <FeedPage id={params.alias || ""} />
-              )
-            }}
-          </RouteMe>
+            <RouteMe path="/writing" paddingClassName='mx-4'>
+              <WritingPage />
+            </RouteMe>
 
-          {/* Default route in a switch */}
-          <Route>404: No such page!</Route>
-        </Switch>
-      </ProfileContext.Provider>
+            <RouteMe path="/writing/:id" paddingClassName='mx-4'>
+              {({ id }) => {
+                const id_num = tryInt(0, id)
+                return (
+                  <WritingPage id={id_num} />
+                )
+              }}
+            </RouteMe>
+
+            <RouteMe path="/callback" >
+              <CallbackPage />
+            </RouteMe>
+
+            <RouteMe path="/feed/:id" headerComponent={TOCHeader()} paddingClassName='mx-4'>
+              {params => {
+                return (<FeedPage id={params.id || ""} />)
+              }}
+            </RouteMe>
+
+            <RouteMe path="/:alias" headerComponent={TOCHeader()} paddingClassName='mx-4'>
+              {params => {
+                return (
+                  <FeedPage id={params.alias || ""} />
+                )
+              }}
+            </RouteMe>
+
+            {/* Default route in a switch */}
+            <Route>404: No such page!</Route>
+          </Switch>
+        </ProfileContext.Provider>
+      </ClientConfigContext.Provider>
     </>
   )
 }

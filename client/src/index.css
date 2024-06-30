@@ -85,7 +85,7 @@ ul {
 }
 
 .writeauto {
-  @apply w-full md:w-7/12 lg:w-8/12 xl:w-10/12 2xl:w-full duration-300;
+  @apply w-full md:w-7/12 lg:w-8/12 duration-300;
 }
 
 .wmde-markdown code {
@@ -112,6 +112,10 @@ ul {
 }
 .markdown-alert-title {
   @apply !mb-2 !text-inherit !font-bold;
+}
+
+.p-inputtext {
+  @apply bg-secondary text-end px-2 py-2;
 }
 
 /* animation */
@@ -142,6 +146,18 @@ ul {
 }
 .ani-show-fast {
   animation: anvil 0.3s cubic-bezier(0.38, 0.1, 0.36, 0.9) forwards;
+}
+
+.table {
+  @apply w-full border-collapse my-4;
+}
+
+.table th, .table td {
+  @apply border border-slate-500 dark:border-slate-300 px-4 py-2;
+}
+
+.table th {
+  @apply bg-slate-200 dark:bg-slate-700;
 }
 
 /* TOC Style */

@@ -4,18 +4,20 @@ import { drizzle } from "drizzle-orm/d1";
 import Elysia from "elysia";
 import { Feed } from "feed";
 import path from 'path';
+import rehypeStringify from "rehype-stringify";
+import remarkGfm from "remark-gfm";
+import remarkParse from "remark-parse";
+import remarkRehype from "remark-rehype";
+import { unified } from "unified";
 import type { Env } from "../db/db";
 import * as schema from "../db/schema";
 import { feeds, users } from "../db/schema";
+import { getEnv } from "../utils/di";
 import { extractImage } from "../utils/image";
 import { createS3Client } from "../utils/s3";
-import remarkGfm from "remark-gfm";
-import { unified } from "unified";
-import remarkParse from "remark-parse";
-import remarkRehype from "remark-rehype";
-import rehypeStringify from "rehype-stringify";
 
-export const RSSService = (env: Env) => {
+export function RSSService() {
+    const env: Env = getEnv();
     const endpoint = env.S3_ENDPOINT;
     const accessHost = env.S3_ACCESS_HOST || endpoint;
     const folder = env.S3_CACHE_FOLDER || 'cache/';
@@ -34,7 +36,7 @@ export const RSSService = (env: Env) => {
                     const url = `${accessHost}/${key}`;
                     console.log(`Fetching ${url}`);
                     const response = await fetch(new Request(url))
-                    const contentType = name === 'rss.xml' ? 'application/rss+xml' : name === 'atom.xml' ? 'application/atom+xml' : 'application/feed+json';
+                    const contentType = name === 'rss.xml' ? 'application/rss+xml; charset=UTF-8' : name === 'atom.xml' ? 'application/atom+xml; charset=UTF-8' : 'application/feed+json; charset=UTF-8';
                     return new Response(response.body, {
                         status: response.status,
                         statusText: response.statusText,
@@ -115,7 +117,7 @@ export async function rssCrontab(env: Env) {
     console.log('save rss.xml to s3');
     const bucket = env.S3_BUCKET;
     const folder = env.S3_CACHE_FOLDER || 'cache/';
-    const s3 = createS3Client(env);
+    const s3 = createS3Client();
     async function save(name: string, data: string) {
         const hashkey = path.join(folder, name);
         try {
